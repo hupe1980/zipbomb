@@ -28,7 +28,8 @@ type fileHeader struct {
 	CompressedSize64   uint64
 	UncompressedSize64 uint64
 
-	Extra []byte
+	Extra         []byte
+	ExternalAttrs uint32
 }
 
 func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name string) *fileHeader {

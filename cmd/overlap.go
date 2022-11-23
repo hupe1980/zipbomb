@@ -92,7 +92,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 					return err
 				}
 
-				name := fmt.Sprintf("Verifying %s", archive.Name())
+				name := fmt.Sprintf("[i] Verifying %s", archive.Name())
 				bar := p.AddBar(int64(len(r.File)),
 					mpb.PrependDecorators(
 						decor.Name(name, decor.WC{W: len(name) + 1, C: decor.DidentRight}),

@@ -176,7 +176,7 @@ func (zb *ZipBomb) close() error {
 		b.uint32(uint32(directoryHeaderSignature))
 		b.uint16(h.CreatorVersion)
 		b.uint16(h.ReaderVersion)
-		b.uint16(0) // Flags
+		b.uint16(h.Flags)
 		b.uint16(h.Method)
 		b.uint16(h.ModifiedTime)
 		b.uint16(h.ModifiedDate)
@@ -206,8 +206,8 @@ func (zb *ZipBomb) close() error {
 		b.uint16(uint16(len(h.Name)))
 		b.uint16(uint16(len(h.Extra)))
 		b.uint16(uint16(len(h.Comment)))
-		b = b[4:]   // skip disk number start and internal file attr (2x uint16)
-		b.uint32(0) // ExternalAttrs
+		b = b[4:] // skip disk number start and internal file attr (2x uint16)
+		b.uint32(h.ExternalAttrs)
 
 		if h.offset > uint32max {
 			b.uint32(uint32max)
