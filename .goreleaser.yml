@@ -1,0 +1,89 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+    - ./scripts/completions.sh
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - completions/*  
+checksum:
+  name_template: '{{ .ProjectName }}_checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+brews:
+  - tap:
+      owner: hupe1980
+      name: homebrew-zipbomb
+    homepage:  https://github.com/hupe1980/zipbomb
+    description: Golang non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container
+    license: MIT
+    test: |
+      system "#{bin}/zipbomb -v"
+    install: |-
+      bin.install "zipbomb"
+      bash_completion.install "completions/zipbomb.bash" => "zipbomb"
+      zsh_completion.install "completions/zipbomb.zsh" => "_zipbomb"
+      fish_completion.install "completions/zipbomb.fish"
+scoop:
+  bucket:
+    owner: hupe1980
+    name: zipbomb-bucket
+  homepage:  https://github.com/hupe1980/zipbomb
+  description: Golang non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container
+  license: MIT
+nfpms:
+  - file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    homepage:  https://github.com/hupe1980/zipbomb
+    maintainer: Frank Hübner <frankhuebner1980@gmail.com>
+    description: Golang non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container
+    license: MIT
+    contents:
+      - src: ./completions/zipbomb.bash
+        dst: /etc/bash_completion.d/zipbomb
+      - src: ./completions/zipbomb.fish
+        dst: /usr/share/fish/completions/zipbomb.fish
+      - src: ./completions/zipbomb.zsh
+        dst: /usr/local/share/zsh/site-functions/_zipbomb
+    formats:
+    - apk
+    - deb
+    - rpm
