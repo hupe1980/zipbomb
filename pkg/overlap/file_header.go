@@ -113,6 +113,10 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
+	if _, err := io.WriteString(buffer, h.Comment); err != nil {
+		return nil, err
+	}
+
 	return buffer.Bytes(), nil
 }
 

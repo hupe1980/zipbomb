@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	errLongName  = errors.New("name too long")
-	errLongExtra = errors.New("extra too long")
+	errLongName    = errors.New("name too long")
+	errLongExtra   = errors.New("extra too long")
+	errLongComment = errors.New("comment too long")
 )
 
 type OnFileCreateHookFunc = func(name string)
@@ -21,6 +22,7 @@ type Options struct {
 	FilenameGen      filename.Generator
 	EOCDComment      string
 	OnFileCreateHook OnFileCreateHookFunc
+	CompressionLevel int // -2 - 9
 }
 
 type cdHeader struct {
@@ -39,19 +41,24 @@ type ZipBomb struct {
 }
 
 // New returns a new overlap zip bomb.
-func New(w io.Writer, optFns ...func(o *Options)) *ZipBomb {
+func New(w io.Writer, optFns ...func(o *Options)) (*ZipBomb, error) {
 	opts := Options{
-		FilenameGen: filename.NewDefaultGenerator(filename.DefaultAlphabet, ""),
+		FilenameGen:      filename.NewDefaultGenerator(filename.DefaultAlphabet, ""),
+		CompressionLevel: 5,
 	}
 
 	for _, fn := range optFns {
 		fn(&opts)
 	}
 
+	if len(opts.EOCDComment) > uint16max {
+		return nil, errLongComment
+	}
+
 	return &ZipBomb{
 		cw:   &countWriter{w: bufio.NewWriter(w)},
 		opts: opts,
-	}
+	}, nil
 }
 
 type fileRecord struct {
@@ -60,7 +67,7 @@ type fileRecord struct {
 }
 
 func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
-	k, err := newKernel(zb.opts.FilenameGen.Generate(numFiles-1), kernelBytes)
+	k, err := newKernel(zb.opts.FilenameGen.Generate(numFiles-1), kernelBytes, zb.opts.CompressionLevel)
 	if err != nil {
 		return err
 	}

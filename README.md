@@ -52,6 +52,7 @@ Usage:
 
 Flags:
       --alphabet string         alphabet for generating filenames (default "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+  -L, --compression-level int   compression-level [-2, 9] (default 5)
       --extension string        extension for generating filenames
   -h, --help                    help for overlap
   -B, --kernel-bytes bytesHex   kernel bytes (default 42)

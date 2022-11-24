@@ -16,12 +16,13 @@ import (
 )
 
 type overlapOptions struct {
-	numFiles      int
-	alphabet      string
-	extension     string
-	verify        bool
-	kernelBytes   []byte
-	kernelRepeats int
+	numFiles         int
+	alphabet         string
+	extension        string
+	verify           bool
+	kernelBytes      []byte
+	kernelRepeats    int
+	compressionLevel int
 }
 
 func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
@@ -53,12 +54,16 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 				mpb.AppendDecorators(decor.Percentage()),
 			)
 
-			zbomb := overlap.New(archive, func(o *overlap.Options) {
+			zbomb, err := overlap.New(archive, func(o *overlap.Options) {
 				o.FilenameGen = filename.NewDefaultGenerator([]byte(opts.alphabet), opts.extension)
+				o.CompressionLevel = opts.compressionLevel
 				o.OnFileCreateHook = func(name string) {
 					bar.Increment()
 				}
 			})
+			if err != nil {
+				return err
+			}
 
 			if err = zbomb.Generate(bytes.Repeat(opts.kernelBytes, opts.kernelRepeats), opts.numFiles); err != nil {
 				return err
@@ -141,6 +146,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 	cmd.Flags().BoolVarP(&opts.verify, "verify", "", false, "verify zip archive")
 	cmd.Flags().BytesHexVarP(&opts.kernelBytes, "kernel-bytes", "B", []byte{'B'}, "kernel bytes")
 	cmd.Flags().IntVarP(&opts.kernelRepeats, "kernel-repeats", "R", 1024*1024, "kernel repeats")
+	cmd.Flags().IntVarP(&opts.compressionLevel, "compression-level", "L", 5, "compression-level [-2, 9]")
 
 	return cmd
 }

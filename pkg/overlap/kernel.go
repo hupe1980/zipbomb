@@ -14,8 +14,8 @@ type kernel struct {
 	name            string
 }
 
-func newKernel(name string, data []byte) (*kernel, error) {
-	compressedBytes, err := CompressKernel(data)
+func newKernel(name string, data []byte, compressionLevel int) (*kernel, error) {
+	compressedBytes, err := CompressKernel(data, compressionLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -62,10 +62,10 @@ func (k *kernel) Name() string {
 	return k.name
 }
 
-func CompressKernel(data []byte) ([]byte, error) {
+func CompressKernel(data []byte, level int) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
-	fw, err := flate.NewWriter(buffer, 5)
+	fw, err := flate.NewWriter(buffer, level)
 	if err != nil {
 		return nil, err
 	}

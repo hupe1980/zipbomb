@@ -12,9 +12,10 @@ import (
 func TestBomb(t *testing.T) {
 	buffer := new(bytes.Buffer)
 
-	zbomb := New(buffer)
+	zbomb, err := New(buffer)
+	assert.NoError(t, err)
 
-	err := zbomb.Generate([]byte{'A'}, 3)
+	err = zbomb.Generate([]byte{'A'}, 3)
 	assert.NoError(t, err)
 
 	r, err := zip.NewReader(bytes.NewReader(buffer.Bytes()), int64(buffer.Len()))
