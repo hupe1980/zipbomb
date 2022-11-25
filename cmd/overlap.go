@@ -23,6 +23,7 @@ type overlapOptions struct {
 	kernelBytes      []byte
 	kernelRepeats    int
 	compressionLevel int
+	extraTag         uint16
 }
 
 func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
@@ -65,6 +66,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 				o.FilenameGen = filename.NewDefaultGenerator([]byte(opts.alphabet), opts.extension)
 				o.CompressionLevel = opts.compressionLevel
 				o.Method = zipbomb.Deflate
+				o.ExtraTag = opts.extraTag
 				o.OnFileCreateHook = func(name string) {
 					bar.Increment()
 				}
@@ -153,6 +155,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 	cmd.Flags().BytesHexVarP(&opts.kernelBytes, "kernel-bytes", "B", []byte{'B'}, "kernel bytes")
 	cmd.Flags().IntVarP(&opts.kernelRepeats, "kernel-repeats", "R", 1024*1024, "kernel repeats")
 	cmd.Flags().IntVarP(&opts.compressionLevel, "compression-level", "L", 5, "compression-level [-2, 9]")
+	cmd.Flags().Uint16VarP(&opts.extraTag, "extra-tag", "", 0, "extra tag to activate extra length excess escaping")
 
 	return cmd
 }

@@ -30,6 +30,8 @@ type fileHeader struct {
 
 	Extra         []byte
 	ExternalAttrs uint32
+
+	extraLengthExcess uint16
 }
 
 func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name string, method uint16) *fileHeader {
@@ -82,6 +84,22 @@ func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name s
 	return lfh
 }
 
+func (h *fileHeader) SetExtraLengthExcess(v uint16) {
+	h.extraLengthExcess = v
+}
+
+func (h *fileHeader) ExtraLengthExcess() uint16 {
+	return h.extraLengthExcess
+}
+
+// func (h *fileHeader) UncompressedSize() uint64 {
+// 	return h.UncompressedSize64
+// }
+
+// func (h *fileHeader) CompressedSize() uint64 {
+// 	return h.CompressedSize64
+// }
+
 // IsZip64 reports whether the file size exceeds the 32 bit limit
 func (h *fileHeader) IsZip64() bool {
 	return h.CompressedSize64 >= uint32max || h.UncompressedSize64 >= uint32max
@@ -112,7 +130,7 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 	b.uint32(uint32(min64(h.UncompressedSize64, uint32max)))
 
 	b.uint16(uint16(len(h.Name)))
-	b.uint16(uint16(len(h.Extra)))
+	b.uint16(uint16(len(h.Extra)) + h.extraLengthExcess)
 
 	if _, err := buffer.Write(buf[:]); err != nil {
 		return nil, err
@@ -123,10 +141,6 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 	}
 
 	if _, err := buffer.Write(h.Extra); err != nil {
-		return nil, err
-	}
-
-	if _, err := io.WriteString(buffer, h.Comment); err != nil {
 		return nil, err
 	}
 
