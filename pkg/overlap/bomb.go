@@ -96,29 +96,18 @@ func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
 
 		crc32.Write(headerBytes)
 
-		numEscaped := uint16(len(headerBytes))
-
 		for i := 1; i < len(files); i++ {
-			headerBytes, err := files[i].header.MarshalBinary()
+			hb, err := files[i].header.MarshalBinary()
 			if err != nil {
 				return err
 			}
 
-			if numEscaped+uint16(len(files[i-1].data))+uint16(len(headerBytes)) > uint16max {
-				break
-			}
-
-			numEscaped = numEscaped + uint16(len(files[i-1].data)) + uint16(len(headerBytes))
-
-			crc32.Write(files[i-1].data)
-			crc32.Write(headerBytes)
-
-			next = files[i]
+			crc32.Write(hb)
 		}
 
 		crc32.Write(k.Bytes())
 
-		escape := newEscape(zb.opts.FilenameGen.Generate(numFiles-1-fi), next.header, numEscaped, crc32)
+		escape := newEscape(zb.opts.FilenameGen.Generate(numFiles-1-fi), next.header, uint16(len(headerBytes)), crc32)
 
 		files = append([]fileRecord{{
 			header: escape.LocalFileHeader(),

@@ -23,11 +23,6 @@ build:
 ## ci: Run all the tests and code checks
 ci: build test
 
-.PHONY: error-run
-## error-run: Runs zipbomb
-error-run:
-	go run -race main.go overlap -N 1762 --verify
-
 .PHONY: fast-run
 ## fast-run: Runs zipbomb
 fast-run:
