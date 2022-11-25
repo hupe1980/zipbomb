@@ -155,7 +155,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 	cmd.Flags().BytesHexVarP(&opts.kernelBytes, "kernel-bytes", "B", []byte{'B'}, "kernel bytes")
 	cmd.Flags().IntVarP(&opts.kernelRepeats, "kernel-repeats", "R", 1024*1024, "kernel repeats")
 	cmd.Flags().IntVarP(&opts.compressionLevel, "compression-level", "L", 5, "compression-level [-2, 9]")
-	cmd.Flags().Uint16VarP(&opts.extraTag, "extra-tag", "", 0, "extra tag to activate extra length excess escaping")
+	cmd.Flags().Uint16VarP(&opts.extraTag, "extra-tag", "", 0, "extra tag to activate extra-field escaping")
 
 	return cmd
 }
