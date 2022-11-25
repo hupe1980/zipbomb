@@ -1,4 +1,4 @@
-package overlap
+package zipbomb
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ type fileHeader struct {
 	ExternalAttrs uint32
 }
 
-func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name string) *fileHeader {
+func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name string, method uint16) *fileHeader {
 	fdate, ftime := timeToMsDosTime(time.Now())
 
 	lfh := &fileHeader{
@@ -45,10 +45,23 @@ func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name s
 		ModifiedDate:       fdate,
 	}
 
+	var zipVersion uint16
+
+	switch method {
+	case Deflate:
+		if lfh.IsZip64() {
+			zipVersion = zipVersion45
+		} else {
+			zipVersion = zipVersion20
+		}
+	case BZip2:
+		zipVersion = zipVersion46
+	}
+
 	if lfh.IsZip64() {
 		lfh.CompressedSize = uint32max
 		lfh.UncompressedSize = uint32max
-		lfh.ReaderVersion = zipVersion45
+		lfh.ReaderVersion = zipVersion
 
 		// append a zip64 extra block to Extra
 		var buf [20]byte // 2x uint16 + 2x uint64
@@ -61,7 +74,7 @@ func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name s
 	} else {
 		lfh.CompressedSize = uint32(lfh.CompressedSize64)
 		lfh.UncompressedSize = uint32(lfh.UncompressedSize64)
-		lfh.ReaderVersion = zipVersion20
+		lfh.ReaderVersion = zipVersion
 	}
 
 	lfh.CreatorVersion = (0 << 8) | lfh.ReaderVersion

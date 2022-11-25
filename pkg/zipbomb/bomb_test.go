@@ -1,4 +1,4 @@
-package overlap
+package zipbomb
 
 import (
 	"archive/zip"
@@ -15,7 +15,10 @@ func TestBomb(t *testing.T) {
 	zbomb, err := New(buffer)
 	assert.NoError(t, err)
 
-	err = zbomb.Generate([]byte{'A'}, 3)
+	err = zbomb.AddEscapedOverlap([]byte{'A'}, 3)
+	assert.NoError(t, err)
+
+	err = zbomb.Close()
 	assert.NoError(t, err)
 
 	r, err := zip.NewReader(bytes.NewReader(buffer.Bytes()), int64(buffer.Len()))

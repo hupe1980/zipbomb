@@ -26,13 +26,14 @@ func newRootCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "zipbomb",
 		Version:       version,
-		Short:         "Tool that creates zip bombs",
+		Short:         "Tool that creates different types of zip bombs",
 		SilenceErrors: true,
 	}
 
 	cmd.PersistentFlags().StringVarP(&opts.output, "output", "o", "bomb.zip", "output filename")
 
 	cmd.AddCommand(
+		newNoOverlapCmd(opts),
 		newOverlapCmd(opts),
 	)
 

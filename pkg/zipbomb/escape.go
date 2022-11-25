@@ -1,4 +1,4 @@
-package overlap
+package zipbomb
 
 import "hash"
 
@@ -20,6 +20,7 @@ func newEscape(name string, header *fileHeader, numEscaped uint16, crc32 hash.Ha
 		uint64(uint32(numEscaped)+header.UncompressedSize),
 		crc32.Sum32(),
 		name,
+		Deflate,
 	)
 
 	return &escape{

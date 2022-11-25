@@ -1,8 +1,10 @@
-package overlap
+package zipbomb
 
 // Compression methods.
+// see APPNOTE.TXT 4.4.5
 const (
-	Deflate uint16 = 8 // DEFLATE compressed
+	Deflate uint16 = 8  // DEFLATE compressed
+	BZip2   uint16 = 12 // BZip2 compressed
 )
 
 const (
@@ -18,8 +20,10 @@ const (
 	directory64EndLen        = 56 // + extra
 
 	// Version numbers.
-	zipVersion20 = 20 // 2.0
-	zipVersion45 = 45 // 4.5 (reads and writes zip64 archives)
+	// see APPNOTE.TXT 4.4.3.2
+	zipVersion20 = 20 // 2.0 - File is compressed using Deflate compression
+	zipVersion45 = 45 // 4.5 - File uses ZIP64 format extensions
+	zipVersion46 = 46 // 4.6 - File is compressed using BZIP2 compression
 
 	// Limits.
 	uint16max = (1 << 16) - 1

@@ -15,7 +15,7 @@ import (
 	"github.com/vbauerster/mpb/v8/decor"
 )
 
-type overlapOptions struct {
+type noOverlapOptions struct {
 	numFiles         int
 	alphabet         string
 	extension        string
@@ -25,12 +25,11 @@ type overlapOptions struct {
 	compressionLevel int
 }
 
-func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
-	opts := &overlapOptions{}
+func newNoOverlapCmd(rootOpts *rootOptions) *cobra.Command {
+	opts := &noOverlapOptions{}
 	cmd := &cobra.Command{
-		Use:           "overlap",
-		Short:         "Create non-recursive overlap zipbomb",
-		Long:          "Create non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container",
+		Use:           "no-overlap",
+		Short:         "Create non-recursive no-overlap zipbomb",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +60,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 
 			kb := bytes.Repeat(opts.kernelBytes, opts.kernelRepeats)
 
-			if err = zbomb.AddEscapedOverlap(kb, opts.numFiles, func(o *zipbomb.AddOptions) {
+			if err = zbomb.AddNoOverlap(kb, opts.numFiles, func(o *zipbomb.AddOptions) {
 				o.FilenameGen = filename.NewDefaultGenerator([]byte(opts.alphabet), opts.extension)
 				o.CompressionLevel = opts.compressionLevel
 				o.Method = zipbomb.Deflate

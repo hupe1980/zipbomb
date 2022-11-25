@@ -1,9 +1,11 @@
-package overlap
+package zipbomb
 
 import (
 	"bytes"
 	"compress/flate"
 	"hash/crc32"
+
+	"github.com/hupe1980/zipbomb/pkg/bzip2"
 )
 
 type kernel struct {
@@ -14,8 +16,8 @@ type kernel struct {
 	name            string
 }
 
-func newKernel(name string, data []byte, compressionLevel int) (*kernel, error) {
-	compressedBytes, err := CompressKernel(data, compressionLevel)
+func newKernel(name string, data []byte, method uint16, compressionLevel int) (*kernel, error) {
+	compressedBytes, err := CompressKernel(data, method, compressionLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +31,7 @@ func newKernel(name string, data []byte, compressionLevel int) (*kernel, error) 
 		name:            name,
 	}
 
-	k.lfh = newFileHeader(k.CompressedSize(), k.UncompressedSize(), k.CRC32(), name)
+	k.lfh = newFileHeader(k.CompressedSize(), k.UncompressedSize(), k.CRC32(), name, method)
 
 	return k, nil
 }
@@ -58,24 +60,44 @@ func (k *kernel) Bytes() []byte {
 	return k.rawBytes
 }
 
+func (k *kernel) CompressedBytes() []byte {
+	return k.compressedBytes
+}
+
 func (k *kernel) Name() string {
 	return k.name
 }
 
-func CompressKernel(data []byte, level int) ([]byte, error) {
+func CompressKernel(data []byte, method uint16, level int) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
-	fw, err := flate.NewWriter(buffer, level)
-	if err != nil {
-		return nil, err
-	}
+	switch method {
+	case Deflate:
+		fw, err := flate.NewWriter(buffer, level)
+		if err != nil {
+			return nil, err
+		}
 
-	if _, err := fw.Write(data); err != nil {
-		return nil, err
-	}
+		if _, err := fw.Write(data); err != nil {
+			return nil, err
+		}
 
-	if err := fw.Close(); err != nil {
-		return nil, err
+		if err := fw.Close(); err != nil {
+			return nil, err
+		}
+	case BZip2:
+		fw, err := bzip2.NewWriter(buffer, level)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := fw.Write(data); err != nil {
+			return nil, err
+		}
+
+		if err := fw.Close(); err != nil {
+			return nil, err
+		}
 	}
 
 	return buffer.Bytes(), nil

@@ -1,7 +1,7 @@
 # zipbomb
 ![Build Status](https://github.com/hupe1980/zipbomb/workflows/build/badge.svg) 
 [![Go Reference](https://pkg.go.dev/badge/github.com/hupe1980/zipbomb.svg)](https://pkg.go.dev/github.com/hupe1980/zipbomb)
-> Tool that creates zip bombs.
+> Tool that creates different types of zip bombs.
 
 :warning: This is for educational purpose. Don’t try it on live clients/servers!
 
@@ -34,7 +34,8 @@ Usage:
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  overlap     Create non-recursive zipbomb
+  no-overlap  Create non-recursive no-overlap zipbomb
+  overlap     Create non-recursive overlap zipbomb
 
 Flags:
   -h, --help            help for zipbomb
@@ -55,6 +56,25 @@ Flags:
   -L, --compression-level int   compression-level [-2, 9] (default 5)
       --extension string        extension for generating filenames
   -h, --help                    help for overlap
+  -B, --kernel-bytes bytesHex   kernel bytes (default 42)
+  -R, --kernel-repeats int      kernel repeats (default 1048576)
+  -N, --num-files int           number of files (default 100)
+      --verify                  verify zip archive
+
+Global Flags:
+  -o, --output string   output filename (default "bomb.zip")
+```
+
+## No-Overlap
+```
+Usage:
+  zipbomb no-overlap [flags]
+
+Flags:
+      --alphabet string         alphabet for generating filenames (default "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+  -L, --compression-level int   compression-level [-2, 9] (default 5)
+      --extension string        extension for generating filenames
+  -h, --help                    help for no-overlap
   -B, --kernel-bytes bytesHex   kernel bytes (default 42)
   -R, --kernel-repeats int      kernel repeats (default 1048576)
   -N, --num-files int           number of files (default 100)
