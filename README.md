@@ -65,7 +65,7 @@ Global Flags:
   -o, --output string   output filename (default "bomb.zip")
 ```
 
-## No-Overlap
+### No-Overlap
 ```
 Usage:
   zipbomb no-overlap [flags]
