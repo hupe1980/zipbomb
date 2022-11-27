@@ -97,7 +97,7 @@ Usage:
 
 Examples:
 - zipbomb zip-slip --zip-slip "../../../file-to-overwrite" --verify
-- zipbomb zip-slip --zip-slip-file "../../script.sh"="./template.sh" -- verify
+- zipbomb zip-slip --zip-slip-file "../../script.sh"="./template.sh" --verify
 
 Flags:
   -L, --compression-level int          compression-level [-2, 9] (default 5)

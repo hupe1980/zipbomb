@@ -30,7 +30,7 @@ func newZipSlipCmd(rootOpts *rootOptions) *cobra.Command {
 		Use:   "zip-slip",
 		Short: "Create a zip-slip",
 		Example: `- zipbomb zip-slip --zip-slip "../../../file-to-overwrite" --verify
-- zipbomb zip-slip --zip-slip-file "../../script.sh"="./template.sh" -- verify`,
+- zipbomb zip-slip --zip-slip-file "../../script.sh"="./template.sh" --verify`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
