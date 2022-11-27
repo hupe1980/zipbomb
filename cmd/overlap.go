@@ -29,9 +29,11 @@ type overlapOptions struct {
 func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 	opts := &overlapOptions{}
 	cmd := &cobra.Command{
-		Use:           "overlap",
-		Short:         "Create non-recursive overlap zipbomb",
-		Long:          "Create non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container",
+		Use:   "overlap",
+		Short: "Create non-recursive overlap zipbomb",
+		Long:  "Create non-recursive zipbomb that achieves a high compression ratio by overlapping files inside the zip container",
+		Example: `- zipbomb overlap -N 2000 --extra-tag 0x9999 --verify
+- zipbomb overlap -N 2000 -R 200000000`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

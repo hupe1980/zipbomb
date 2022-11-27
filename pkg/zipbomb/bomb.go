@@ -95,12 +95,12 @@ func (zb *ZipBomb) AddNoOverlap(kernelBytes []byte, numFiles int, optFns ...func
 
 	zb.uncompressedSize = zb.uncompressedSize + int64(k.UncompressedSize())
 
-	for fi := 1; fi < numFiles; fi++ {
+	for len(files) < numFiles {
 		lfh := newFileHeader(
 			k.CompressedSize(),
 			k.UncompressedSize(),
 			k.CRC32(),
-			opts.FilenameGen.Generate(numFiles-1-fi),
+			opts.FilenameGen.Generate(numFiles-1-len(files)),
 			opts.Method,
 		)
 
@@ -148,8 +148,21 @@ func (zb *ZipBomb) AddEscapedOverlap(kernelBytes []byte, numFiles int, optFns ..
 
 	zb.uncompressedSize = zb.uncompressedSize + int64(k.UncompressedSize())
 
-	if opts.Method == Deflate && opts.ExtraTag == 0 {
-		for len(files) < numFiles {
+	// Calculate how many files we can escape with the extra field.
+	extraFieldEscapedFile := 0
+
+	if opts.ExtraTag != 0 {
+		sum := 0
+		for sum <= uint16max {
+			sum = sum + fileHeaderLen + 4 + 20 + len(opts.FilenameGen.Generate(extraFieldEscapedFile+1))
+			extraFieldEscapedFile = extraFieldEscapedFile + 1
+		}
+
+		extraFieldEscapedFile = extraFieldEscapedFile - 1
+	}
+
+	if opts.Method == Deflate {
+		for len(files) < numFiles-extraFieldEscapedFile {
 			next := files[0]
 
 			headerBytes, err := next.header.MarshalBinary()

@@ -31,7 +31,8 @@ type fileHeader struct {
 	Extra         []byte
 	ExternalAttrs uint32
 
-	extraLengthExcess uint16
+	extraLengthExcess   uint16
+	extraFieldEscapeTag uint16
 }
 
 func newFileHeader(compressedSize, uncompressedSize uint64, crc32 uint32, name string, method uint16) *fileHeader {
@@ -92,6 +93,14 @@ func (h *fileHeader) ExtraLengthExcess() uint16 {
 	return h.extraLengthExcess
 }
 
+func (h *fileHeader) SetFieldEscapeTag(v uint16) {
+	h.extraFieldEscapeTag = v
+}
+
+func (h *fileHeader) ExtraFieldEscapeTag() uint16 {
+	return h.extraFieldEscapeTag
+}
+
 // func (h *fileHeader) UncompressedSize() uint64 {
 // 	return h.UncompressedSize64
 // }
@@ -116,6 +125,16 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 		return nil, errLongExtra
 	}
 
+	var extra []byte
+
+	if h.extraFieldEscapeTag != 0 {
+		var buf [4]byte
+		eb := writeBuf(buf[:])
+		eb.uint16(h.extraFieldEscapeTag)
+		eb.uint16(h.extraLengthExcess)
+		extra = append(h.Extra, buf[:]...)
+	}
+
 	var buf [fileHeaderLen]byte
 	b := writeBuf(buf[:])
 	b.uint32(uint32(fileHeaderSignature))
@@ -130,7 +149,7 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 	b.uint32(uint32(min64(h.UncompressedSize64, uint32max)))
 
 	b.uint16(uint16(len(h.Name)))
-	b.uint16(uint16(len(h.Extra)) + h.extraLengthExcess)
+	b.uint16(uint16(len(extra)) + h.extraLengthExcess)
 
 	if _, err := buffer.Write(buf[:]); err != nil {
 		return nil, err
@@ -140,7 +159,7 @@ func (h *fileHeader) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if _, err := buffer.Write(h.Extra); err != nil {
+	if _, err := buffer.Write(extra); err != nil {
 		return nil, err
 	}
 
