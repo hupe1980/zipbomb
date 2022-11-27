@@ -23,15 +23,20 @@ build:
 ## ci: Run all the tests and code checks
 ci: build test
 
+.PHONY: zip-slip
+## zip-slip: Runs zipbomb zip-slip
+zip-slip:
+	go run -race main.go zip-slip --zip-slip "../script.sh" --verify
+
 .PHONY: fast-run
 ## fast-run: Runs zipbomb
 fast-run:
-	go run -race main.go overlap -N 1760 --verify
+	go run -race main.go overlap -N 2000 --verify
 
 .PHONY: run
 ## run: Runs zipbomb
 run:
-	go run -race main.go overlap -N 1760 -R 200000000 --verify
+	go run -race main.go overlap -N 2000 -R 200000000 --verify
 
 .PHONY: help
 ## help: Prints this help message

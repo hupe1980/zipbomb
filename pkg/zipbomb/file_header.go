@@ -3,6 +3,7 @@ package zipbomb
 import (
 	"bytes"
 	"io"
+	"io/fs"
 	"time"
 )
 
@@ -114,6 +115,20 @@ func (h *fileHeader) IsZip64() bool {
 	return h.CompressedSize64 >= uint32max || h.UncompressedSize64 >= uint32max
 }
 
+// SetMode changes the permission and mode bits for the FileHeader.
+func (h *fileHeader) SetMode(mode fs.FileMode) {
+	h.CreatorVersion = h.CreatorVersion&0xff | creatorUnix<<8
+	h.ExternalAttrs = fileModeToUnixMode(mode) << 16
+
+	// set MSDOS attributes too, as the original zip does.
+	if mode&fs.ModeDir != 0 {
+		h.ExternalAttrs |= msdosDir
+	}
+	if mode&0200 == 0 {
+		h.ExternalAttrs |= msdosReadOnly
+	}
+}
+
 func (h *fileHeader) MarshalBinary() ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
@@ -173,6 +188,36 @@ func timeToMsDosTime(t time.Time) (fDate uint16, fTime uint16) {
 	fTime = uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
 
 	return
+}
+
+func fileModeToUnixMode(mode fs.FileMode) uint32 {
+	var m uint32
+	switch mode & fs.ModeType {
+	default:
+		m = s_IFREG
+	case fs.ModeDir:
+		m = s_IFDIR
+	case fs.ModeSymlink:
+		m = s_IFLNK
+	case fs.ModeNamedPipe:
+		m = s_IFIFO
+	case fs.ModeSocket:
+		m = s_IFSOCK
+	case fs.ModeDevice:
+		m = s_IFBLK
+	case fs.ModeDevice | fs.ModeCharDevice:
+		m = s_IFCHR
+	}
+	if mode&fs.ModeSetuid != 0 {
+		m |= s_ISUID
+	}
+	if mode&fs.ModeSetgid != 0 {
+		m |= s_ISGID
+	}
+	if mode&fs.ModeSticky != 0 {
+		m |= s_ISVTX
+	}
+	return m | uint32(mode&0777)
 }
 
 func min64(x, y uint64) uint64 {

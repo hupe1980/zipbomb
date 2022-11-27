@@ -64,7 +64,7 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 
 			kb := bytes.Repeat(opts.kernelBytes, opts.kernelRepeats)
 
-			if err = zbomb.AddEscapedOverlap(kb, opts.numFiles, func(o *zipbomb.AddOptions) {
+			if err = zbomb.AddEscapedOverlap(kb, opts.numFiles, func(o *zipbomb.OverlapOptions) {
 				o.FilenameGen = filename.NewDefaultGenerator([]byte(opts.alphabet), opts.extension)
 				o.CompressionLevel = opts.compressionLevel
 				o.Method = zipbomb.Deflate
@@ -82,20 +82,11 @@ func newOverlapCmd(rootOpts *rootOptions) *cobra.Command {
 
 			p.Wait()
 
-			finfo, err := os.Stat(archive.Name())
-			if err != nil {
-				return err
-			}
-
 			creatingEnd := time.Now()
 
-			emptyLine()
-			printInfof("Archive: %s", archive.Name())
-			printInfof("Zip64: %t", zbomb.IsZip64())
-			printInfof("Comcompressed size: %d %s", finfo.Size()/1024, "KB")
-			printInfof("Uncomcompressed size: %d %s", zbomb.UncompressedSize()/(1024*1024), "MB")
-			printInfof("Ratio: %.2f", float64(zbomb.UncompressedSize())/float64(finfo.Size()))
-			printInfof("Creating time elapsed: %s\n", creatingEnd.Sub(creatingStart))
+			if err = printStats(archive.Name(), creatingEnd.Sub(creatingStart), zbomb); err != nil {
+				return err
+			}
 
 			if opts.verify {
 				verifyingStart := time.Now()

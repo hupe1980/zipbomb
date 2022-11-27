@@ -36,6 +36,7 @@ Available Commands:
   help        Help about any command
   no-overlap  Create non-recursive no-overlap zipbomb
   overlap     Create non-recursive overlap zipbomb
+  zip-slip    Create a zip-slip
 
 Flags:
   -h, --help            help for zipbomb
@@ -51,10 +52,15 @@ Create non-recursive zipbomb that achieves a high compression ratio by overlappi
 Usage:
   zipbomb overlap [flags]
 
+Examples:
+- zipbomb overlap -N 2000 --extra-tag 0x9999 --verify
+- zipbomb overlap -N 2000 -R 200000000
+
 Flags:
       --alphabet string         alphabet for generating filenames (default "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
   -L, --compression-level int   compression-level [-2, 9] (default 5)
       --extension string        extension for generating filenames
+      --extra-tag uint16        extra tag to activate extra-field escaping
   -h, --help                    help for overlap
   -B, --kernel-bytes bytesHex   kernel bytes (default 42)
   -R, --kernel-repeats int      kernel repeats (default 1048576)
@@ -79,6 +85,28 @@ Flags:
   -R, --kernel-repeats int      kernel repeats (default 1048576)
   -N, --num-files int           number of files (default 100)
       --verify                  verify zip archive
+
+Global Flags:
+  -o, --output string   output filename (default "bomb.zip")
+```
+
+### ZipSlip
+```
+Usage:
+  zipbomb zip-slip [flags]
+
+Examples:
+- zipbomb zip-slip --zip-slip "../../../file-to-overwrite" --verify
+- zipbomb zip-slip --zip-slip-file "../../script.sh"="./template.sh" -- verify
+
+Flags:
+  -L, --compression-level int          compression-level [-2, 9] (default 5)
+  -h, --help                           help for zip-slip
+  -B, --kernel-bytes bytesHex          kernel bytes (default 42)
+  -R, --kernel-repeats int             kernel repeats (default 1048576)
+      --verify                         verify zip archive
+      --zip-slip strings               zip slip with kernel bytes
+      --zip-slip-file stringToString   zip slip with file content (default [])
 
 Global Flags:
   -o, --output string   output filename (default "bomb.zip")

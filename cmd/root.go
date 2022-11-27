@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/hupe1980/zipbomb/pkg/zipbomb"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +37,7 @@ func newRootCmd(version string) *cobra.Command {
 	cmd.AddCommand(
 		newNoOverlapCmd(opts),
 		newOverlapCmd(opts),
+		newZipSlipCmd(opts),
 	)
 
 	return cmd
@@ -54,4 +57,21 @@ func printLogo() {
 |   __| | . | __ -| . |     | . |
 |_____|_|  _|_____|___|_|_|_|___|
 	|_|                      `, "\n\n")
+}
+
+func printStats(name string, duration time.Duration, zbomb *zipbomb.ZipBomb) error {
+	finfo, err := os.Stat(name)
+	if err != nil {
+		return err
+	}
+
+	emptyLine()
+	printInfof("Archive: %s", name)
+	printInfof("Zip64: %t", zbomb.IsZip64())
+	printInfof("Comcompressed size: %d %s", finfo.Size()/1024, "KB")
+	printInfof("Uncomcompressed size: %d %s", zbomb.UncompressedSize()/(1024*1024), "MB")
+	printInfof("Ratio: %.2f", float64(zbomb.UncompressedSize())/float64(finfo.Size()))
+	printInfof("Creating time elapsed: %s\n", duration)
+
+	return nil
 }
