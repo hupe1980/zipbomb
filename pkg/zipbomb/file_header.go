@@ -124,6 +124,7 @@ func (h *fileHeader) SetMode(mode fs.FileMode) {
 	if mode&fs.ModeDir != 0 {
 		h.ExternalAttrs |= msdosDir
 	}
+
 	if mode&0200 == 0 {
 		h.ExternalAttrs |= msdosReadOnly
 	}
@@ -192,31 +193,37 @@ func timeToMsDosTime(t time.Time) (fDate uint16, fTime uint16) {
 
 func fileModeToUnixMode(mode fs.FileMode) uint32 {
 	var m uint32
+
+	// nolint
 	switch mode & fs.ModeType {
 	default:
-		m = s_IFREG
+		m = IFREG
 	case fs.ModeDir:
-		m = s_IFDIR
+		m = IFDIR
 	case fs.ModeSymlink:
-		m = s_IFLNK
+		m = IFLNK
 	case fs.ModeNamedPipe:
-		m = s_IFIFO
+		m = IFIFO
 	case fs.ModeSocket:
-		m = s_IFSOCK
+		m = IFSOCK
 	case fs.ModeDevice:
-		m = s_IFBLK
+		m = IFBLK
 	case fs.ModeDevice | fs.ModeCharDevice:
-		m = s_IFCHR
+		m = IFCHR
 	}
+
 	if mode&fs.ModeSetuid != 0 {
-		m |= s_ISUID
+		m |= ISUID
 	}
+
 	if mode&fs.ModeSetgid != 0 {
-		m |= s_ISGID
+		m |= ISGID
 	}
+
 	if mode&fs.ModeSticky != 0 {
-		m |= s_ISVTX
+		m |= ISVTX
 	}
+
 	return m | uint32(mode&0777)
 }
 
