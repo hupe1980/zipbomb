@@ -37,6 +37,7 @@ func newRootCmd(version string) *cobra.Command {
 	cmd.AddCommand(
 		newNoOverlapCmd(opts),
 		newOverlapCmd(opts),
+		newSelfReproduceCmd(opts),
 		newZipSlipCmd(opts),
 	)
 

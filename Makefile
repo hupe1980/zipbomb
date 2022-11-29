@@ -23,6 +23,11 @@ build:
 ## ci: Run all the tests and code checks
 ci: build test
 
+.PHONY: reproduce
+## reproduce: Runs zipbomb reproduce
+reproduce:
+	go run -race main.go reproduce
+
 .PHONY: zip-slip
 ## zip-slip: Runs zipbomb zip-slip
 zip-slip:

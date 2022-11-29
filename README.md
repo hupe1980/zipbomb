@@ -112,5 +112,10 @@ Global Flags:
   -o, --output string   output filename (default "bomb.zip")
 ```
 
+## References
+- https://www.bamsoftware.com/hacks/zipbomb/
+- https://research.swtch.com/zip
+- https://security.snyk.io/research/zip-slip-vulnerability
+
 ## License
 [MIT](LICENCE)
